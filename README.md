@@ -63,6 +63,22 @@ Add to your MCP configuration:
 
 Replace `/absolute/path/to/` with the actual path where you cloned the repo.
 
+## Skill
+
+The `skill/` directory contains an agent skill file with the API reference, response types, and common query patterns. Install it depending on your client:
+
+**Cursor:**
+```bash
+cp -r skill ~/.cursor/skills/polymarket-sponsored-rewards
+```
+
+**Claude Code:**
+```bash
+cp skill/SKILL.md CLAUDE.md
+```
+
+**Codex / other agents:** include `skill/SKILL.md` in your project root or system prompt.
+
 ## Dashboard
 
 [cheff-phi.vercel.app/opportunities](https://cheff-phi.vercel.app/opportunities)
