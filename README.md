@@ -1,120 +1,110 @@
-# Polymarket Sponsored Rewards — MCP Skill
+# Polymarket Sponsored Rewards — MCP Server + Skill
 
-A Cursor agent skill that gives AI agents access to live Polymarket sponsored reward data. Query active rewards, discover high-yield markets, and build automated liquidity provisioning strategies.
+MCP server and agent skill for querying live Polymarket sponsored reward data. Works with **Claude Code**, **Cursor**, and **Codex**.
 
-## What This Does
+Data is indexed on-chain from Polygon contract `0xf7cD89BE08Af4D4D6B1522852ceD49FC10169f64` (Polymarket Rewards Sponsorship).
 
-Polymarket has a permissionless rewards sponsorship contract on Polygon (`0xf7cD89BE08Af4D4D6B1522852ceD49FC10169f64`). Anyone can deposit USDC to incentivize liquidity on a specific market. This skill lets AI agents query that data through a public API.
+## Tools
 
-The API indexes two on-chain event types:
+| Tool | Description |
+|------|-------------|
+| `get_sponsored_rewards` | Full snapshot: overall stats + every sponsorship event |
+| `get_active_opportunities` | Active rewards sorted by daily rate, with filtering |
+| `get_top_sponsors` | Top sponsors ranked by net USDC deposited |
 
-- **Sponsored** — USDC deposited to reward LPs on a market
-- **Withdrawn** — sponsor reclaims unspent USDC
+## Setup
 
-Market names are enriched via Polymarket's Gamma API.
-
-## Install as Cursor Skill
-
-Copy the `polymarket-sponsored-rewards` directory into your Cursor skills folder:
+### 1. Build
 
 ```bash
-# Personal skill (available across all projects)
-cp -r polymarket-sponsored-rewards ~/.cursor/skills/
-
-# Or project-level skill (shared with repo collaborators)
-cp -r polymarket-sponsored-rewards .cursor/skills/
+git clone https://github.com/sanketagarwal/polymarket-rewards-mcp.git
+cd polymarket-rewards-mcp
+npm install
+npm run build
 ```
 
-Once installed, the Cursor agent will automatically use it when you ask about Polymarket rewards, sponsored markets, or liquidity provisioning.
+### 2. Configure your client
 
-## API
+#### Claude Code
 
+```bash
+claude mcp add polymarket-rewards -- node /absolute/path/to/polymarket-rewards-mcp/build/index.js
 ```
-GET https://cheff-phi.vercel.app/api/sponsored
-```
 
-Add `?force=1` to bypass the 5-minute cache and fetch fresh on-chain data.
+#### Cursor
 
-### Response
+Add to `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` globally):
 
 ```json
 {
-  "events": [...],
-  "overall": {
-    "totalEvents": 3801,
-    "uniqueSponsors": 2565,
-    "uniqueMarkets": 920,
-    "totalAmountUsdc": 192359.04,
-    "netAmountUsdc": 134307.87,
-    "totalReturnedUsdc": 58051.18,
-    "totalConsumedUsdc": 49958.26
-  },
-  "fetchedAt": "2026-02-19T22:03:00.000Z",
-  "fromBlock": 82810472,
-  "toBlock": 83209020
+  "mcpServers": {
+    "polymarket-rewards": {
+      "command": "node",
+      "args": ["/absolute/path/to/polymarket-rewards-mcp/build/index.js"]
+    }
+  }
 }
 ```
 
-Each event in the `events` array:
+#### Codex
+
+Add to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "polymarket-rewards": {
+      "command": "node",
+      "args": ["/absolute/path/to/polymarket-rewards-mcp/build/index.js"]
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/` with the actual path where you cloned the repo.
+
+## Cursor Skill (alternative)
+
+If you prefer a skill over an MCP server, copy the skill directory into your Cursor skills folder:
+
+```bash
+cp -r polymarket-sponsored-rewards ~/.cursor/skills/
+```
+
+The skill teaches the agent how to query the API directly via `fetch`/`curl` without needing the MCP server running.
+
+## API Reference
+
+All tools query `https://cheff-phi.vercel.app/api/sponsored` which returns:
+
+```
+{
+  events: SponsoredEvent[]
+  overall: { totalEvents, uniqueSponsors, uniqueMarkets, totalAmountUsdc, netAmountUsdc, totalReturnedUsdc, totalConsumedUsdc }
+  fetchedAt: string
+  fromBlock: number
+  toBlock: number
+}
+```
+
+Each `SponsoredEvent`:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `marketId` | string | Polymarket condition token ID |
-| `sponsor` | string | Sponsor's Ethereum address |
+| `sponsor` | string | Ethereum address |
 | `amountUsdc` | number | Total USDC deposited |
 | `ratePerDayUsdc` | number | Daily reward rate |
 | `startTime` | string | ISO timestamp |
 | `endTime` | string | ISO timestamp |
-| `durationDays` | number | Total reward duration |
-| `txHash` | string | Polygon transaction hash |
-| `marketQuestion` | string | Market title from Polymarket |
+| `durationDays` | number | Total duration |
+| `txHash` | string | Polygon tx hash |
+| `marketQuestion` | string | Market title |
 | `eventSlug` | string | Polymarket event URL slug |
-| `withdrawn` | boolean | Whether sponsor has withdrawn |
+| `withdrawn` | boolean | Whether sponsor withdrew |
 | `returnedUsdc` | number | USDC returned to sponsor |
 | `consumedUsdc` | number | USDC paid to LPs |
 
-## Examples
-
-### Get active rewards sorted by daily rate
-
-```typescript
-const res = await fetch('https://cheff-phi.vercel.app/api/sponsored');
-const { events } = await res.json();
-
-const active = events
-  .filter(e => !e.withdrawn && new Date(e.endTime) > new Date())
-  .sort((a, b) => b.ratePerDayUsdc - a.ratePerDayUsdc);
-```
-
-### Find rewards for a specific market
-
-```typescript
-const forMarket = events.filter(e => e.marketId === targetConditionId);
-```
-
-### Top sponsors by net spend
-
-```typescript
-const map = new Map();
-for (const e of events) {
-  const k = e.sponsor.toLowerCase();
-  map.set(k, (map.get(k) ?? 0) + e.amountUsdc - e.returnedUsdc);
-}
-const ranked = [...map.entries()].sort((a, b) => b[1] - a[1]);
-```
-
-### Build a Polymarket link
-
-```typescript
-const url = `https://polymarket.com/event/${event.eventSlug}`;
-```
-
-## Data Source
-
-All data is indexed directly from Polygon. The contract was deployed at block 82,810,472. The API reads `Sponsored` and `Withdrawn` events, decodes the log data, and enriches market IDs with names from the Gamma API.
-
-The backend caches results for 5 minutes and fetches incrementally (only new blocks since the last scan).
-
 ## Dashboard
 
-View the live dashboard at [cheff-phi.vercel.app/opportunities](https://cheff-phi.vercel.app/opportunities).
+[cheff-phi.vercel.app/opportunities](https://cheff-phi.vercel.app/opportunities)

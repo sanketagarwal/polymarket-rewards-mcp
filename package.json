@@ -1,0 +1,24 @@
+{
+  "name": "polymarket-rewards-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for querying Polymarket sponsored reward data from on-chain Polygon events",
+  "type": "module",
+  "bin": {
+    "polymarket-rewards-mcp": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js",
+    "start": "node build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "typescript": "^5.7.3"
+  }
+}
