@@ -1,6 +1,6 @@
-# Polymarket Sponsored Rewards — MCP Server + Skill
+# Polymarket Sponsored Rewards — MCP Server
 
-MCP server and agent skill for querying live Polymarket sponsored reward data. Works with **Claude Code**, **Cursor**, and **Codex**.
+MCP server for querying live Polymarket sponsored reward data. Works with any MCP-compatible client: **Claude Code**, **Cursor**, **Codex**, or anything else that supports the protocol.
 
 Data is indexed on-chain from Polygon contract `0xf7cD89BE08Af4D4D6B1522852ceD49FC10169f64` (Polymarket Rewards Sponsorship).
 
@@ -23,7 +23,7 @@ npm install
 npm run build
 ```
 
-### 2. Configure your client
+### 2. Connect to your client
 
 #### Claude Code
 
@@ -33,7 +33,7 @@ claude mcp add polymarket-rewards -- node /absolute/path/to/polymarket-rewards-m
 
 #### Cursor
 
-Add to `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` globally):
+Add to `.cursor/mcp.json` in your project or globally at `~/.cursor/mcp.json`:
 
 ```json
 {
@@ -63,47 +63,18 @@ Add to your MCP configuration:
 
 Replace `/absolute/path/to/` with the actual path where you cloned the repo.
 
-## Cursor Skill (alternative)
+## Agent Context (without MCP)
 
-If you prefer a skill over an MCP server, copy the skill directory into your Cursor skills folder:
+If your agent doesn't support MCP, or you want to give it context about the API without running a server, use `CONTEXT.md`. It contains the full API reference, response types, and common query patterns. Feed it to your agent however your tool supports context files:
 
-```bash
-cp -r polymarket-sponsored-rewards ~/.cursor/skills/
-```
-
-The skill teaches the agent how to query the API directly via `fetch`/`curl` without needing the MCP server running.
+- **Claude Code**: copy as `CLAUDE.md` in your project root
+- **Cursor**: create a rule file at `.cursor/rules/polymarket-rewards.md`, or copy into `~/.cursor/skills/polymarket-sponsored-rewards/SKILL.md` (add YAML frontmatter `name` and `description` fields)
+- **Codex**: include in your system prompt or project context
+- **Any agent**: paste the contents or reference the file in your prompt
 
 ## API Reference
 
-All tools query `https://cheff-phi.vercel.app/api/sponsored` which returns:
-
-```
-{
-  events: SponsoredEvent[]
-  overall: { totalEvents, uniqueSponsors, uniqueMarkets, totalAmountUsdc, netAmountUsdc, totalReturnedUsdc, totalConsumedUsdc }
-  fetchedAt: string
-  fromBlock: number
-  toBlock: number
-}
-```
-
-Each `SponsoredEvent`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `marketId` | string | Polymarket condition token ID |
-| `sponsor` | string | Ethereum address |
-| `amountUsdc` | number | Total USDC deposited |
-| `ratePerDayUsdc` | number | Daily reward rate |
-| `startTime` | string | ISO timestamp |
-| `endTime` | string | ISO timestamp |
-| `durationDays` | number | Total duration |
-| `txHash` | string | Polygon tx hash |
-| `marketQuestion` | string | Market title |
-| `eventSlug` | string | Polymarket event URL slug |
-| `withdrawn` | boolean | Whether sponsor withdrew |
-| `returnedUsdc` | number | USDC returned to sponsor |
-| `consumedUsdc` | number | USDC paid to LPs |
+All tools query `https://cheff-phi.vercel.app/api/sponsored`. See [CONTEXT.md](CONTEXT.md) for the full response schema and field descriptions.
 
 ## Dashboard
 

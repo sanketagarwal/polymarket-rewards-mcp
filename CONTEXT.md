@@ -1,8 +1,3 @@
----
-name: polymarket-sponsored-rewards
-description: Query and analyze Polymarket sponsored reward markets using a public API. Use when the user asks about Polymarket rewards, sponsored markets, liquidity provisioning opportunities, reward farming, or market making on Polymarket.
----
-
 # Polymarket Sponsored Rewards
 
 ## API Endpoint
@@ -105,10 +100,3 @@ Market names enriched via Gamma API (`gamma-api.polymarket.com`).
 - Market page: `https://polymarket.com/event/{eventSlug}`
 - Sponsor profile: `https://polymarket.com/profile/{sponsor}`
 - Transaction: `https://polygonscan.com/tx/{txHash}`
-
-## Use Cases
-
-1. **Discover high-reward markets** — sort active events by `ratePerDayUsdc` to find the best LP opportunities.
-2. **Monitor sponsor activity** — track new deposits and withdrawals over time.
-3. **Estimate LP returns** — combine `ratePerDayUsdc` with market liquidity from the CLOB API.
-4. **Alert on new opportunities** — poll the endpoint and detect new events.
